@@ -1631,7 +1631,7 @@ textarea.form-input {
 
 /* Track */
 .carousel-track {
-  padding:5%;
+ 
   display: flex;
   animation: scrollX 20s linear infinite;
 }
