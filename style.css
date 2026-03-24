@@ -1717,3 +1717,6 @@ textarea.form-input {
   width: 100%;
   height: 80px;
 }
+.carousel:hover .carousel-track {
+  animation-play-state: paused;
+}
