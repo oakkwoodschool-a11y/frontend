@@ -5,6 +5,8 @@ const loginScreen = document.getElementById('loginScreen');
 const dashboardScreen = document.getElementById('dashboardScreen');
 const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
+const passwordInput = document.getElementById('password');
+const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const refreshAppsBtn = document.getElementById('refreshAppsBtn');
 const admissionsOpenEl = document.getElementById('admissionsOpen');
@@ -57,12 +59,20 @@ async function api(path, options = {}) {
   return { response, data };
 }
 
+togglePasswordBtn.addEventListener('click', () => {
+  const showing = passwordInput.type === 'text';
+  passwordInput.type = showing ? 'password' : 'text';
+  togglePasswordBtn.textContent = showing ? 'Show' : 'Hide';
+  togglePasswordBtn.setAttribute('aria-pressed', showing ? 'false' : 'true');
+  togglePasswordBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+});
+
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.hidden = true;
 
   const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value;
+  const password = passwordInput.value;
 
   try {
     const { response, data } = await api('/admin/login', {

@@ -21,7 +21,10 @@
         <label for="username">Username</label>
         <input id="username" name="username" type="text" autocomplete="username" required />
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <div class="password-field">
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <button id="togglePasswordBtn" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
         <p id="loginError" class="login-error" hidden></p>
         <button type="submit" class="btn-login">Sign in</button>
       </form>

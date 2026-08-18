@@ -107,6 +107,35 @@ body {
   box-shadow: 0 0 0 3px rgba(23, 94, 51, 0.12);
 }
 
+.password-field {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.password-field input {
+  margin-bottom: 0;
+  padding-right: 4.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.35rem;
+}
+
+.password-toggle:hover {
+  color: var(--primary-dark);
+}
+
 .login-error {
   color: var(--error);
   font-size: 0.875rem;
