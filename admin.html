@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Oakk Wood School</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin.css" />
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <img src="/school-logo.jpeg" alt="Oakk Wood School" class="login-logo" />
+      <h1>Admin Dashboard</h1>
+      <p class="login-subtitle">Oakk Wood School</p>
+      <form id="loginForm">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required />
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <p id="loginError" class="login-error" hidden></p>
+        <button type="submit" class="btn-login">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashboardScreen" class="dashboard" hidden>
+    <header class="admin-header">
+      <div class="admin-header-brand">
+        <img src="/school-logo.jpeg" alt="Oakk Wood School" />
+        <div>
+          <strong>Oakk Wood School</strong>
+          <span>Admin Dashboard</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn-ghost" type="button">Log out</button>
+    </header>
+
+    <main class="admin-main">
+      <section class="stats-row" id="statsRow">
+        <article class="stat-card">
+          <span>Total Applications</span>
+          <strong id="statTotal">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Pending</span>
+          <strong id="statPending">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Accepted</span>
+          <strong id="statAccepted">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Admission Settings</h2>
+        <p class="panel-copy">Control whether the public website shows admissions as open, and set the current session year.</p>
+
+        <div class="setting-row">
+          <div>
+            <h3>Admissions Open</h3>
+            <p>When disabled, Apply for Admission buttons become Contact Us and the form is hidden.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="admissionsOpen" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row setting-row-input">
+          <div>
+            <h3>Session Year</h3>
+            <p>Shown across the website, for example 2026-2027.</p>
+          </div>
+          <input id="sessionLabel" type="text" maxlength="32" placeholder="2026-2027" />
+        </div>
+
+        <p id="settingsMessage" class="settings-message" hidden></p>
+        <button id="saveSettingsBtn" class="btn-primary" type="button">Save settings</button>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Applications</h2>
+          <button id="refreshAppsBtn" class="btn-ghost" type="button">Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Student</th>
+                <th>Class</th>
+                <th>Parent</th>
+                <th>Phone</th>
+                <th>Submitted</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="appsBody">
+              <tr><td colspan="7">Loading applications…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

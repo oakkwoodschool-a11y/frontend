@@ -3,6 +3,8 @@
    Pure vanilla JS, no frameworks
 ============================================ */
 
+const API_BASE = 'https://server-zt4j.onrender.com';
+
 // ---- NAVBAR SCROLL ----
 const navbar = document.getElementById('navbar');
 const navToggle = document.getElementById('navToggle');
@@ -247,7 +249,7 @@ form.addEventListener('submit', async (e) => {
 
   try {
     // Submit to API
-    const response = await fetch('https://server-zt4j.onrender.com/admissions', {
+    const response = await fetch(`${API_BASE}/admissions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -341,6 +343,95 @@ function launchConfetti() {
   }
 }
 
+// ---- ADMISSION SETTINGS ----
+function sessionShort(label) {
+  const match = String(label || '').match(/^(\d{4})\s*[-–]\s*(\d{2,4})$/);
+  if (!match) return label;
+  const end = match[2].length === 4 ? match[2].slice(-2) : match[2];
+  return `${match[1]}-${end}`;
+}
+
+function applyAdmissionUI({ admissionsOpen, sessionLabel }) {
+  const session = sessionLabel || '2026-2027';
+  const short = sessionShort(session);
+
+  document.title = admissionsOpen
+    ? `Oakk Wood School - Admissions Open ${short} | Nursery to Class VIII`
+    : 'Oakk Wood School | Nursery to Class VIII';
+
+  const heroBadge = document.getElementById('heroBadge');
+  const heroBadgeText = document.getElementById('heroBadgeText');
+  if (heroBadgeText) {
+    heroBadgeText.textContent = admissionsOpen ? `Admissions Open ${session}` : 'Admissions Closed';
+  }
+  if (heroBadge) {
+    heroBadge.style.display = '';
+  }
+
+  document.querySelectorAll('.js-apply-cta').forEach((el) => {
+    const label = el.querySelector('.js-apply-label');
+    if (admissionsOpen) {
+      el.href = '#admission';
+      if (el.id === 'footerAdmissionLink' && label) {
+        label.textContent = `Admissions ${short}`;
+      } else if (label) {
+        label.textContent = el.dataset.applyLabel || 'Apply Now';
+      }
+    } else {
+      el.href = '#contact';
+      if (label) label.textContent = 'Contact Us';
+    }
+  });
+
+  const admissionBadge = document.getElementById('admissionBadge');
+  const admissionTitle = document.getElementById('admissionTitle');
+  const admissionSubtitle = document.getElementById('admissionSubtitle');
+  const admissionCardSubtitle = document.getElementById('admissionCardSubtitle');
+  const formState = document.getElementById('formState');
+  const successState = document.getElementById('successState');
+  const closedState = document.getElementById('admissionClosedState');
+  const cardHeader = document.querySelector('.admission-card-header');
+
+  if (admissionBadge) {
+    admissionBadge.textContent = admissionsOpen ? `Admissions Open ${short}` : 'Admissions Closed';
+  }
+  if (admissionTitle) {
+    admissionTitle.textContent = admissionsOpen ? 'Apply for Admission' : 'Admissions Currently Closed';
+  }
+  if (admissionSubtitle) {
+    admissionSubtitle.textContent = admissionsOpen
+      ? 'Join the Oakk Wood School family. Fill out the form below and our admission team will contact you shortly.'
+      : 'Please contact the school for more information about the next admission cycle.';
+  }
+  if (admissionCardSubtitle) {
+    admissionCardSubtitle.textContent = `Session ${session} — Nursery to Class VIII`;
+  }
+
+  if (admissionsOpen) {
+    if (formState) formState.style.display = '';
+    if (closedState) closedState.hidden = true;
+    if (cardHeader) cardHeader.style.display = '';
+  } else {
+    if (formState) formState.style.display = 'none';
+    if (successState) successState.style.display = 'none';
+    if (closedState) closedState.hidden = false;
+    if (cardHeader) cardHeader.style.display = 'none';
+  }
+}
+
+async function loadAdmissionSettings() {
+  try {
+    const response = await fetch(`${API_BASE}/settings`);
+    const data = await response.json();
+    applyAdmissionUI({
+      admissionsOpen: data.admissionsOpen !== false,
+      sessionLabel: data.sessionLabel || '2026-2027'
+    });
+  } catch (err) {
+    applyAdmissionUI({ admissionsOpen: true, sessionLabel: '2026-2027' });
+  }
+}
+
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
   // Hide all error elements initially
@@ -356,4 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set current year in footer
   const yearEl = document.getElementById('currentYear');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  loadAdmissionSettings();
 });
