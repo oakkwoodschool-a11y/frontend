@@ -40,49 +40,25 @@
       <button id="logoutBtn" class="btn-ghost" type="button">Log out</button>
     </header>
 
-    <main class="admin-main">
-      <section class="stats-row" id="statsRow">
-        <article class="stat-card">
-          <span>Total Applications</span>
-          <strong id="statTotal">0</strong>
-        </article>
-        <article class="stat-card">
-          <span>Pending</span>
-          <strong id="statPending">0</strong>
-        </article>
-        <article class="stat-card">
-          <span>Accepted</span>
-          <strong id="statAccepted">0</strong>
-        </article>
-      </section>
-
-      <section class="panel">
-        <h2>Admission Settings</h2>
-        <p class="panel-copy">Control whether the public website shows admissions as open, and set the current session year.</p>
-
-        <div class="setting-row">
-          <div>
-            <h3>Admissions Open</h3>
-            <p>When disabled, Apply for Admission buttons become Contact Us and the form is hidden.</p>
-          </div>
-          <label class="switch">
+    <div class="settings-ribbon">
+      <div class="ribbon-inner">
+        <div class="ribbon-toggle">
+          <span class="ribbon-status" id="admissionsStatusLabel">Admissions</span>
+          <label class="switch" title="Enable or disable admissions">
             <input type="checkbox" id="admissionsOpen" />
             <span class="slider"></span>
           </label>
+          <span class="ribbon-state" id="admissionsStateText">Disabled</span>
         </div>
-
-        <div class="setting-row setting-row-input">
-          <div>
-            <h3>Session Year</h3>
-            <p>Shown across the website, for example 2026-2027.</p>
-          </div>
+        <div class="ribbon-session">
+          <label for="sessionLabel">Session</label>
           <input id="sessionLabel" type="text" maxlength="32" placeholder="2026-2027" />
         </div>
-
         <p id="settingsMessage" class="settings-message" hidden></p>
-        <button id="saveSettingsBtn" class="btn-primary" type="button">Save settings</button>
-      </section>
+      </div>
+    </div>
 
+    <main class="admin-main">
       <section class="panel">
         <div class="panel-heading">
           <h2>Applications</h2>

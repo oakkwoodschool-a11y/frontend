@@ -118,7 +118,9 @@ const form = document.getElementById('admissionForm');
 const successState = document.getElementById('successState');
 const formState = document.getElementById('formState');
 
-const validators = {
+let admissionsOpen = true;
+
+const admissionValidators = {
   studentName: { required: true, minLength: 2, message: 'Student name must be at least 2 characters' },
   dateOfBirth: { required: true, message: 'Date of birth is required' },
   gender: { required: true, message: 'Please select a gender' },
@@ -129,6 +131,17 @@ const validators = {
   address: { required: true, minLength: 10, message: 'Please enter your full address (at least 10 characters)' },
 };
 
+const contactValidators = {
+  parentName: { required: true, minLength: 2, message: 'Name must be at least 2 characters' },
+  parentPhone: { required: true, pattern: /^\d{10,}$/, message: 'Enter a valid phone number (at least 10 digits)' },
+  parentEmail: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
+  message: { required: true, minLength: 10, message: 'Please enter your message (at least 10 characters)' },
+};
+
+function getActiveValidators() {
+  return admissionsOpen ? admissionValidators : contactValidators;
+}
+
 function getField(name) {
   return form.querySelector(`[name="${name}"]`);
 }
@@ -138,7 +151,7 @@ function getError(name) {
 }
 
 function validateField(name, value) {
-  const rule = validators[name];
+  const rule = getActiveValidators()[name];
   if (!rule) return true;
 
   if (rule.required && !value.trim()) {
@@ -182,8 +195,13 @@ function clearError(name) {
   }
 }
 
+const allValidatorNames = [...new Set([
+  ...Object.keys(admissionValidators),
+  ...Object.keys(contactValidators)
+])];
+
 // Real-time validation on blur
-Object.keys(validators).forEach(name => {
+allValidatorNames.forEach(name => {
   const field = getField(name);
   if (!field) return;
 
@@ -210,12 +228,14 @@ Object.keys(validators).forEach(name => {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  const activeValidators = getActiveValidators();
+
   // Clear all errors
-  Object.keys(validators).forEach(name => clearError(name));
+  allValidatorNames.forEach(name => clearError(name));
 
   // Validate all fields
   let hasErrors = false;
-  Object.keys(validators).forEach(name => {
+  Object.keys(activeValidators).forEach(name => {
     const field = getField(name);
     if (!field) return;
     const result = validateField(name, field.value);
@@ -246,6 +266,14 @@ form.addEventListener('submit', async (e) => {
   // Collect form data
   const formData = new FormData(form);
   const data = Object.fromEntries(formData.entries());
+  if (!admissionsOpen) {
+    delete data.studentName;
+    delete data.dateOfBirth;
+    delete data.gender;
+    delete data.classApplied;
+    delete data.previousSchool;
+    delete data.address;
+  }
 
   try {
     // Submit to API
@@ -259,9 +287,13 @@ form.addEventListener('submit', async (e) => {
 
     if (response.ok && result.success) {
       showSuccess(result.applicationId);
-      launchConfetti();
+      if (admissionsOpen) launchConfetti();
     } else {
-      const msg = result.message || 'Failed to submit application. Please try again.';
+      const msg = result.message
+        || (Array.isArray(result.errors) && result.errors[0])
+        || (admissionsOpen
+          ? 'Failed to submit application. Please try again.'
+          : 'Failed to send message. Please try again.');
       showFormError(msg);
     }
 
@@ -306,7 +338,33 @@ function showFormError(msg) {
 }
 
 function showSuccess(appId) {
-  document.getElementById('applicationId').textContent = 'Application ID: ' + appId;
+  const successTitle = document.getElementById('successTitle');
+  const successSubtitle = document.getElementById('successSubtitle');
+  const successBack = document.getElementById('successBack');
+  const applicationId = document.getElementById('applicationId');
+
+  if (admissionsOpen) {
+    if (successTitle) successTitle.textContent = 'Application Submitted!';
+    if (successSubtitle) {
+      successSubtitle.textContent = 'Thank you for applying to Oakk Wood School. Our admission team will contact you within 2-3 working days.';
+    }
+    if (applicationId) {
+      applicationId.hidden = false;
+      applicationId.textContent = 'Application ID: ' + appId;
+    }
+    if (successBack) successBack.textContent = '← Submit Another Application';
+  } else {
+    if (successTitle) successTitle.textContent = 'Message Sent!';
+    if (successSubtitle) {
+      successSubtitle.textContent = 'Thank you for contacting Oakk Wood School. We will get back to you shortly.';
+    }
+    if (applicationId) {
+      applicationId.hidden = false;
+      applicationId.textContent = 'Reference ID: ' + appId;
+    }
+    if (successBack) successBack.textContent = '← Send Another Message';
+  }
+
   formState.style.display = 'none';
   successState.style.display = 'block';
   successState.classList.add('visible');
@@ -315,7 +373,7 @@ function showSuccess(appId) {
 
 function resetForm() {
   form.reset();
-  Object.keys(validators).forEach(name => clearError(name));
+  allValidatorNames.forEach(name => clearError(name));
   formState.style.display = 'block';
   successState.style.display = 'none';
   successState.classList.remove('visible');
@@ -351,7 +409,8 @@ function sessionShort(label) {
   return `${match[1]}-${end}`;
 }
 
-function applyAdmissionUI({ admissionsOpen, sessionLabel }) {
+function applyAdmissionUI({ admissionsOpen: isOpen, sessionLabel }) {
+  admissionsOpen = Boolean(isOpen);
   const session = sessionLabel || '2026-2027';
   const short = sessionShort(session);
 
@@ -359,63 +418,78 @@ function applyAdmissionUI({ admissionsOpen, sessionLabel }) {
     ? `Oakk Wood School - Admissions Open ${short} | Nursery to Class VIII`
     : 'Oakk Wood School | Nursery to Class VIII';
 
-  const heroBadge = document.getElementById('heroBadge');
-  const heroBadgeText = document.getElementById('heroBadgeText');
-  if (heroBadgeText) {
-    heroBadgeText.textContent = admissionsOpen ? `Admissions Open ${session}` : 'Admissions Closed';
-  }
-  if (heroBadge) {
-    heroBadge.style.display = '';
-  }
+  document.querySelectorAll('.js-admissions-only').forEach((el) => {
+    el.hidden = !admissionsOpen;
+  });
+
+  document.querySelectorAll('.js-admission-fields').forEach((el) => {
+    el.hidden = !admissionsOpen;
+  });
 
   document.querySelectorAll('.js-apply-cta').forEach((el) => {
     const label = el.querySelector('.js-apply-label');
+    el.href = '#admission';
     if (admissionsOpen) {
-      el.href = '#admission';
       if (el.id === 'footerAdmissionLink' && label) {
         label.textContent = `Admissions ${short}`;
       } else if (label) {
         label.textContent = el.dataset.applyLabel || 'Apply Now';
       }
-    } else {
-      el.href = '#contact';
-      if (label) label.textContent = 'Contact Us';
+    } else if (label) {
+      label.textContent = 'Contact Us';
     }
   });
 
+  const heroBadgeText = document.getElementById('heroBadgeText');
   const admissionBadge = document.getElementById('admissionBadge');
   const admissionTitle = document.getElementById('admissionTitle');
   const admissionSubtitle = document.getElementById('admissionSubtitle');
+  const admissionCardTitle = document.getElementById('admissionCardTitle');
   const admissionCardSubtitle = document.getElementById('admissionCardSubtitle');
-  const formState = document.getElementById('formState');
-  const successState = document.getElementById('successState');
-  const closedState = document.getElementById('admissionClosedState');
-  const cardHeader = document.querySelector('.admission-card-header');
-
-  if (admissionBadge) {
-    admissionBadge.textContent = admissionsOpen ? `Admissions Open ${short}` : 'Admissions Closed';
-  }
-  if (admissionTitle) {
-    admissionTitle.textContent = admissionsOpen ? 'Apply for Admission' : 'Admissions Currently Closed';
-  }
-  if (admissionSubtitle) {
-    admissionSubtitle.textContent = admissionsOpen
-      ? 'Join the Oakk Wood School family. Fill out the form below and our admission team will contact you shortly.'
-      : 'Please contact the school for more information about the next admission cycle.';
-  }
-  if (admissionCardSubtitle) {
-    admissionCardSubtitle.textContent = `Session ${session} — Nursery to Class VIII`;
-  }
+  const contactSectionTitle = document.getElementById('contactSectionTitle');
+  const parentNameLabel = document.getElementById('parentNameLabel');
+  const messageLabel = document.getElementById('messageLabel');
+  const parentNameInput = document.getElementById('parentName');
+  const messageInput = document.getElementById('message');
+  const submitText = document.querySelector('.submit-text');
 
   if (admissionsOpen) {
-    if (formState) formState.style.display = '';
-    if (closedState) closedState.hidden = true;
-    if (cardHeader) cardHeader.style.display = '';
+    if (heroBadgeText) heroBadgeText.textContent = `Admissions Open ${session}`;
+    if (admissionBadge) admissionBadge.textContent = `Admissions Open ${short}`;
+    if (admissionTitle) admissionTitle.textContent = 'Apply for Admission';
+    if (admissionSubtitle) {
+      admissionSubtitle.textContent = 'Join the Oakk Wood School family. Fill out the form below and our admission team will contact you shortly.';
+    }
+    if (admissionCardTitle) admissionCardTitle.textContent = 'Admission Application Form';
+    if (admissionCardSubtitle) {
+      admissionCardSubtitle.textContent = `Session ${session} — Nursery to Class VIII`;
+    }
+    if (contactSectionTitle) contactSectionTitle.textContent = 'Parent / Guardian Information';
+    if (parentNameLabel) {
+      parentNameLabel.innerHTML = 'Parent / Guardian Name <span class="required">*</span>';
+    }
+    if (messageLabel) messageLabel.textContent = 'Additional Message (Optional)';
+    if (parentNameInput) parentNameInput.placeholder = parentNameInput.dataset.admissionPlaceholder;
+    if (messageInput) messageInput.placeholder = messageInput.dataset.admissionPlaceholder;
+    if (submitText) submitText.textContent = 'Submit Application';
   } else {
-    if (formState) formState.style.display = 'none';
-    if (successState) successState.style.display = 'none';
-    if (closedState) closedState.hidden = false;
-    if (cardHeader) cardHeader.style.display = 'none';
+    if (admissionBadge) admissionBadge.textContent = 'Get in Touch';
+    if (admissionTitle) admissionTitle.textContent = 'Contact Us';
+    if (admissionSubtitle) {
+      admissionSubtitle.textContent = 'Have a question? Send us a message and our team will get back to you shortly.';
+    }
+    if (admissionCardTitle) admissionCardTitle.textContent = 'Contact Form';
+    if (admissionCardSubtitle) admissionCardSubtitle.textContent = 'Oakk Wood School — Bajpur';
+    if (contactSectionTitle) contactSectionTitle.textContent = 'Your Details';
+    if (parentNameLabel) {
+      parentNameLabel.innerHTML = 'Your Name <span class="required">*</span>';
+    }
+    if (messageLabel) {
+      messageLabel.innerHTML = 'Message <span class="required">*</span>';
+    }
+    if (parentNameInput) parentNameInput.placeholder = parentNameInput.dataset.contactPlaceholder;
+    if (messageInput) messageInput.placeholder = messageInput.dataset.contactPlaceholder;
+    if (submitText) submitText.textContent = 'Send Message';
   }
 }
 

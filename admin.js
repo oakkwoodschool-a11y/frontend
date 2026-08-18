@@ -6,11 +6,11 @@ const dashboardScreen = document.getElementById('dashboardScreen');
 const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
-const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const refreshAppsBtn = document.getElementById('refreshAppsBtn');
 const admissionsOpenEl = document.getElementById('admissionsOpen');
 const sessionLabelEl = document.getElementById('sessionLabel');
 const settingsMessage = document.getElementById('settingsMessage');
+const admissionsStateText = document.getElementById('admissionsStateText');
 const appsBody = document.getElementById('appsBody');
 
 function getToken() {
@@ -93,9 +93,21 @@ logoutBtn.addEventListener('click', () => {
   showLogin();
 });
 
-saveSettingsBtn.addEventListener('click', async () => {
+function updateAdmissionsStateText() {
+  admissionsStateText.textContent = admissionsOpenEl.checked ? 'Enabled' : 'Disabled';
+}
+
+let saveTimer;
+function scheduleSave() {
+  updateAdmissionsStateText();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveSettings, 150);
+}
+
+async function saveSettings() {
   settingsMessage.hidden = true;
-  saveSettingsBtn.disabled = true;
+  admissionsOpenEl.disabled = true;
+  sessionLabelEl.disabled = true;
 
   try {
     const { response, data } = await api('/admin/settings', {
@@ -109,9 +121,13 @@ saveSettingsBtn.addEventListener('click', async () => {
     settingsMessage.hidden = false;
     if (response.ok && data.success) {
       settingsMessage.className = 'settings-message ok';
-      settingsMessage.textContent = 'Settings saved. The website will update immediately.';
+      settingsMessage.textContent = admissionsOpenEl.checked
+        ? 'Admissions enabled.'
+        : 'Admissions disabled.';
       admissionsOpenEl.checked = data.admissionsOpen;
       sessionLabelEl.value = data.sessionLabel;
+      updateAdmissionsStateText();
+      setTimeout(() => { settingsMessage.hidden = true; }, 2500);
     } else {
       settingsMessage.className = 'settings-message err';
       settingsMessage.textContent = data.message || 'Could not save settings.';
@@ -123,28 +139,32 @@ saveSettingsBtn.addEventListener('click', async () => {
       settingsMessage.textContent = 'Unable to save settings. Please try again.';
     }
   } finally {
-    saveSettingsBtn.disabled = false;
+    admissionsOpenEl.disabled = false;
+    sessionLabelEl.disabled = false;
+  }
+}
+
+admissionsOpenEl.addEventListener('change', scheduleSave);
+
+sessionLabelEl.addEventListener('change', scheduleSave);
+sessionLabelEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sessionLabelEl.blur();
   }
 });
 
 refreshAppsBtn.addEventListener('click', loadApplications);
 
 async function loadDashboard() {
-  await Promise.all([loadSettings(), loadStats(), loadApplications()]);
+  await Promise.all([loadSettings(), loadApplications()]);
 }
 
 async function loadSettings() {
   const { data } = await api('/settings');
   admissionsOpenEl.checked = Boolean(data.admissionsOpen);
   sessionLabelEl.value = data.sessionLabel || '';
-}
-
-async function loadStats() {
-  const { data } = await api('/admissions/stats');
-  if (!data.success) return;
-  document.getElementById('statTotal').textContent = data.total ?? 0;
-  document.getElementById('statPending').textContent = data.pending ?? 0;
-  document.getElementById('statAccepted').textContent = data.accepted ?? 0;
+  updateAdmissionsStateText();
 }
 
 function formatClass(value) {
@@ -183,11 +203,13 @@ async function loadApplications() {
       return;
     }
 
-    appsBody.innerHTML = rows.map((row) => `
+    appsBody.innerHTML = rows.map((row) => {
+      const isContact = row.inquiryType === 'contact';
+      return `
       <tr>
         <td>${row.applicationId || '—'}</td>
-        <td>${escapeHtml(row.studentName)}</td>
-        <td>${formatClass(row.classApplied)}</td>
+        <td>${escapeHtml(isContact ? row.parentName : row.studentName)}</td>
+        <td>${isContact ? 'Contact' : formatClass(row.classApplied)}</td>
         <td>${escapeHtml(row.parentName)}</td>
         <td>${escapeHtml(row.parentPhone)}</td>
         <td>${formatDate(row.submittedAt)}</td>
@@ -199,7 +221,8 @@ async function loadApplications() {
           </select>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   } catch (err) {
     if (err.message !== 'unauthorized') {
       appsBody.innerHTML = '<tr><td colspan="7">Could not load applications.</td></tr>';
@@ -224,7 +247,6 @@ appsBody.addEventListener('change', async (e) => {
       method: 'PATCH',
       body: JSON.stringify({ status: select.value })
     });
-    await loadStats();
   } catch (err) {
     if (err.message !== 'unauthorized') {
       alert('Could not update status.');
